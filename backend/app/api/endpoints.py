@@ -117,9 +117,15 @@ def create_appointment(
     if current_user.role != models.UserRole.PATIENT:
         raise HTTPException(status_code=403, detail="Only patients can book appointments")
     
-    # Validation: Ensure appointment time is in the future
-    if appt.appointment_time <= datetime.datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Appointment time must be in the future")
+    # Validation: Ensure appointment time is in the future (robust comparison of timezone-aware and naive)
+    appointment_time_utc = appt.appointment_time
+    if appointment_time_utc.tzinfo is not None:
+        appointment_time_utc = appointment_time_utc.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        if appointment_time_utc <= datetime.datetime.utcnow():
+            raise HTTPException(status_code=400, detail="Appointment time must be in the future")
+    else:
+        if appointment_time_utc <= datetime.datetime.now():
+            raise HTTPException(status_code=400, detail="Appointment time must be in the future")
         
     # Check if doctor exists
     doctor = db.query(models.User).filter(models.User.id == appt.doctor_id, models.User.role == models.UserRole.DOCTOR).first()
@@ -129,7 +135,7 @@ def create_appointment(
     db_appt = models.Appointment(
         patient_id=current_user.id,
         doctor_id=appt.doctor_id,
-        appointment_time=appt.appointment_time,
+        appointment_time=appointment_time_utc,
         notes=appt.notes,
         status="pending",  # Set status explicitly to resolve synchronization validation
         video_room_id=str(uuid.uuid4()) # Generate unique room code

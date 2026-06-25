@@ -72,17 +72,43 @@ export default function PatientDashboard() {
     loadDashboardData();
   }, []);
 
+  const getMinDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const formatAppointmentTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${day}/${month}/${year}, ${hours}.${minutes} ${ampm}`;
+  };
+
   const handleBookAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDoctorId || !apptTime) return;
 
     setBookingLoading(true);
     setBookingSuccess(false);
+    setError("");
 
     try {
+      // Convert local date/time selection to UTC ISO format for backend compatibility
+      const appointmentTimeUTC = new Date(apptTime).toISOString();
       await apiRequest("/appointments", "POST", {
         doctor_id: Number(selectedDoctorId),
-        appointment_time: apptTime,
+        appointment_time: appointmentTimeUTC,
         notes: apptNotes
       });
       
@@ -328,7 +354,7 @@ export default function PatientDashboard() {
                         
                         <div className="appt-body">
                           <p className="appt-time">
-                            📅 {new Date(appt.appointment_time).toLocaleString()}
+                            📅 {formatAppointmentTime(appt.appointment_time)}
                           </p>
                           {appt.notes && <p className="appt-notes">📝 {appt.notes}</p>}
                         </div>
@@ -360,6 +386,12 @@ export default function PatientDashboard() {
                       Appointment requested successfully!
                     </div>
                   )}
+                  {error && (
+                    <div className="error-banner">
+                      <AlertCircle size={16} />
+                      {error}
+                    </div>
+                  )}
 
                   <div className="form-group">
                     <label className="form-label">Select Specialist Doctor</label>
@@ -383,6 +415,7 @@ export default function PatientDashboard() {
                     <input 
                       type="datetime-local" 
                       required 
+                      min={getMinDateTime()}
                       value={apptTime} 
                       onChange={(e) => setApptTime(e.target.value)} 
                       className="form-input" 
@@ -522,8 +555,8 @@ export default function PatientDashboard() {
                     {bills.map((bill) => (
                       <tr key={bill.id}>
                         <td><code>{bill.invoice_number}</code></td>
-                        <td>{new Date(bill.created_at).toLocaleDateString()}</td>
-                        <td><strong>${bill.amount.toFixed(2)}</strong></td>
+                        <td>{new Date(bill.created_at).toLocaleDateString("en-GB")}</td>
+                        <td><strong>₹{bill.amount.toFixed(2)}</strong></td>
                         <td>
                           <span className={`badge badge-${bill.status}`}>
                             {bill.status}
@@ -754,6 +787,17 @@ export default function PatientDashboard() {
           background: var(--success-glow);
           color: var(--success);
           border: 1px solid var(--success);
+          padding: 10px;
+          border-radius: var(--radius-md);
+          font-size: 0.85rem;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .error-banner {
+          background: var(--danger-glow);
+          color: var(--danger);
+          border: 1px solid var(--danger);
           padding: 10px;
           border-radius: var(--radius-md);
           font-size: 0.85rem;

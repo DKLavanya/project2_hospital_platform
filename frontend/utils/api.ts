@@ -1,5 +1,13 @@
 const API_BASE_URL = "http://localhost:8000/api/v1";
 
+export class ApiError extends Error {
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 export async function apiRequest(endpoint: string, method: string = "GET", body: any = null, token: string | null = null) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -23,7 +31,7 @@ export async function apiRequest(endpoint: string, method: string = "GET", body:
     const res = await fetch(`${API_BASE_URL}${endpoint}`, config);
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.detail || `Request failed with status ${res.status}`);
+      throw new ApiError(errData.detail || `Request failed with status ${res.status}`, res.status);
     }
     if (res.status === 204) return null;
     return await res.json();

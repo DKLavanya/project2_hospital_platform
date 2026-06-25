@@ -7,6 +7,19 @@ import { apiRequest } from "../../utils/api";
 
 export default function DoctorDashboard() {
   const [activeTab, setActiveTab] = useState("queue");
+
+  const formatAppointmentTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${day}/${month}/${year}, ${hours}.${minutes} ${ampm}`;
+  };
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   
@@ -299,7 +312,7 @@ export default function DoctorDashboard() {
             className={`menu-btn ${activeTab === "emr" ? "active" : ""}`}
           >
             <Activity size={18} />
-            clinical Records
+            Clinical Records
           </button>
           <button 
             onClick={() => {
@@ -311,7 +324,7 @@ export default function DoctorDashboard() {
             className={`menu-btn ${activeTab === "prescribe" ? "active" : ""}`}
           >
             <FileText size={18} />
-            prescriptions
+            Prescriptions
           </button>
           <button 
             onClick={() => {
@@ -363,7 +376,7 @@ export default function DoctorDashboard() {
                         </td>
                         <td>
                           <span className="appt-time-label">
-                            📅 {new Date(appt.appointment_time).toLocaleString()}
+                            📅 {formatAppointmentTime(appt.appointment_time)}
                           </span>
                         </td>
                         <td><span className="appt-notes-txt">{appt.notes || "General checkup"}</span></td>
@@ -710,14 +723,14 @@ export default function DoctorDashboard() {
                   )}
 
                   <div className="form-group">
-                    <label className="form-label">Billing Amount ($ USD)</label>
+                    <label className="form-label">Billing Amount (₹ INR)</label>
                     <input 
                       type="number" 
                       min="1" 
                       required 
                       value={billAmount} 
                       onChange={(e) => setBillAmount(e.target.value === "" ? "" : Number(e.target.value))} 
-                      placeholder="e.g. 75" 
+                      placeholder="e.g. 150" 
                       className="form-input" 
                     />
                   </div>

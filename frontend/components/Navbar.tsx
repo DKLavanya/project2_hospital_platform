@@ -21,10 +21,13 @@ export default function Navbar() {
     try {
       const user = await apiRequest("/auth/me");
       setCurrentUser(user);
-    } catch (err) {
-      console.error("Failed to load user profile, token might be expired.");
-      localStorage.removeItem("telemed_token");
-      setCurrentUser(null);
+    } catch (err: any) {
+      console.error("Failed to load user profile:", err);
+      // Only remove the token if it is explicitly an authentication failure (401 Unauthorized or 403 Forbidden)
+      if (err.status === 401 || err.status === 403) {
+        localStorage.removeItem("telemed_token");
+        setCurrentUser(null);
+      }
     }
   };
 
